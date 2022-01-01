@@ -1,11 +1,11 @@
 import cv2
 import nibabel as nib
+import torch
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import glob
 import numpy as np
-
-import torchvision
+import SimpleITK as sitk
 
 class DCE_MRI_2d(Dataset):
     def __init__(self):
@@ -16,25 +16,28 @@ class DCE_MRI_2d(Dataset):
         self.read_data()
 
     def __getitem__(self, index):
-        return self.data[index], self.mask[index]
+        return torch.from_numpy(self.data[index]), torch.from_numpy(self.mask[index])
 
     def __len__(self):
         return self.len
 
     def read_data(self):
         # 读取D:/GroupProjectDataSet/QIN Breast DCE-MRI/dicom/下的所有文件夹
-        list_dataset = glob.glob("D:/GroupProjectDataSet/QIN Breast DCE-MRI/niigz/DCE-MRI-*/data/*")
+        list_dataset = glob.glob("D:/GroupProjectDataSet/QIN_Breast_DCE-MRI/niigz/DCE-MRI-*/data/*")
+        print(list_dataset)
         for name in list_dataset:
-            img = nib.load(name).get_data()
-            img = np.array(img)
-            z_len = img.shape[2]
+            itk_img = sitk.ReadImage(name)
+            img = sitk.GetArrayFromImage(itk_img)
+            z_len = img.shape[0]
             for i in range(z_len):
-                self.data.append(img[:, :, i])
+                self.data.append(img[i, :, :])
 
-        list_dataset = glob.glob("D:/GroupProjectDataSet/QIN Breast DCE-MRI/niigz/DCE-MRI-*/mask/*")
+        list_dataset = glob.glob("D:/GroupProjectDataSet/QIN_Breast_DCE-MRI/niigz/DCE-MRI-*/mask/*")
+        print(list_dataset)
         for name in list_dataset:
-            img = nib.load(name).get_data()
-            img = np.array(img)
-            z_len = img.shape[2]
+            itk_img = sitk.ReadImage(name)
+            img = sitk.GetArrayFromImage(itk_img)
+            z_len = img.shape[0]
             for i in range(z_len):
-                self.mask.append(img[:, :, i])
+                self.mask.append(img[i, :, :])
+
