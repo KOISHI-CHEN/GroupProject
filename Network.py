@@ -5,11 +5,12 @@ import torch.nn.functional as F
 
 input_channel = 3
 input_size = 320
-out_put_size_A = 72
+out_put_size_A = 78
 
-hidden_layer_size_B = 34
-P = 256
+hidden_layer_size_B = 38
+P = 256  #1024 in that paper
 size = 1
+
 
 class SegmentationNetwork(nn.Module):
     def __init__(self):
@@ -51,8 +52,10 @@ class SegmentationNetwork(nn.Module):
         return h2
 
     def Block_B(self,x):
-        B_h1 = F.relu(self.bnB1(self.convB1(x))).view(-1, int(x.nelement() / x.shape[0]))
-        B_h2 = F.relu(self.bnB2(self.fcB1(B_h1)))
+        x = self.convB1(x)
+        B_h1 = F.relu(self.bnB1(x)).view(-1, int(x.nelement() / x.shape[0]))
+        B_h1 = self.fcB1(B_h1)
+        B_h2 = F.relu(self.bnB2(B_h1))
         return self.fcB3(B_h2)
 
     def Block_LC(self,x):
@@ -67,16 +70,20 @@ class SegmentationNetwork(nn.Module):
         return self.convHC4(HC_h2)
 
     def Block_HD_One(self,x):
+        x = x.view(-1, int(x.nelement() / x.shape[0]))
         return F.relu(self.bnHD_one(self.HD_one_fc(x)))
 
     def Block_HD_Two(self,x):
+        x = x.view(-1, int(x.nelement() / x.shape[0]))
         return F.relu(self.bnHD_two(self.HD_two_fc(x)))
 
     def forward(self,x):
         z1 = self.Block_A(x)
         local_feature = self.Block_LC(z1)
         z2 = self.Block_B(z1)
-        z3 = self.Block_LC(z2)
+        z2 = z2.unsqueeze(1)
+        z2 = z2.unsqueeze(1)
+        z3 = self.Block_HC(z2)
         global_feature_one = self.Block_HD_One(z3)
         global_feature_two = self.Block_HD_Two(z3)
 
