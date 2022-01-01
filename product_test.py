@@ -1,3 +1,5 @@
+from sys import float_info
+
 import torch
 import numpy as np
 import torch.nn.functional as F
@@ -16,4 +18,8 @@ print(b.size())
 product = torch.sum(torch.mul(a,b),dim=1)
 print(product.size())
 print(product)
+
+EPS = float_info.epsilon
+print(EPS)
+# print(EPS)
 
