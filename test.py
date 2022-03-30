@@ -4,10 +4,12 @@ import torch
 import torchvision
 from Network import SegmentationNetwork
 import torch.nn.functional as F
-
+import os
+from utils.DataProcess import DCE_MRI_2d
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 lr =0.001
 batch_size =2
-
+test_batch_size = 1
 
 def MI_loss(local_feature, recover_feature):
     product = torch.mul(local_feature,recover_feature)
@@ -20,10 +22,13 @@ def MI_loss(local_feature, recover_feature):
     return loss
     # print(product.size())
 
+data_set = DCE_MRI_2d()
+length=len(data_set)
+train_size,validate_size=int(0.9*length),int(0.1*length)
+train_set,validate_set=torch.utils.data.random_split(data_set,[train_size,validate_size])
+train_loader = data.DataLoader(train_set,batch_size=batch_size)
+test_loader = data.DataLoader(validate_set,batch_size=test_batch_size)
 
-train_data_test = datasets.ImageFolder('./Data',transform=torchvision.transforms.ToTensor())
-
-train_loader = data.DataLoader(train_data_test,batch_size=batch_size)
 device = torch.device("cuda:0"if torch.cuda.is_available() else "cpu")
 model = SegmentationNetwork()
 model.to(device)
@@ -31,7 +36,9 @@ model.to(device)
 optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
 num = 0
-for img,label in (train_loader):
+for batch in (train_loader):
+    imgs = batch['image']
+    true_masks = batch['mask']
     num+=1
     model.train()
     img = img.to(device)
